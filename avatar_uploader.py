@@ -16,12 +16,11 @@ from pathlib import Path
 import shutil
 import uuid
 import os
-from dotenv import load_dotenv
+from pymongo import MongoClient
 from community_db_manager import count_unread_dreams
 
-env_path = Path(__file__).parent / ".env_user"
-load_dotenv(dotenv_path=env_path)
-MONGO_URI = os.getenv("MONGODB_URI")
+MONGO_URI = os.getenv("MONGODB_URI")  
+
 
 app = FastAPI()
 client = MongoClient(MONGO_URI)
