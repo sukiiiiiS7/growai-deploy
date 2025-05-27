@@ -9,6 +9,8 @@
 - [x] Red dot system for unread dream notifications via `/count_unread_dreams/{user_id}`
 - [x] MongoDB integration for users, logs, dream chats
 - [x] Light sensor POST/GET endpoint via `/lux` (real-time testable)
+- [x] Backend deployed to Render: [https://growai-backend.onrender.com](https://growai-backend.onrender.com)
+
 
 ---
 

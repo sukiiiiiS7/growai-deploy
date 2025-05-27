@@ -18,6 +18,7 @@ import uuid
 import os
 from pymongo import MongoClient
 from community_db_manager import count_unread_dreams
+from check_achievements import check_achievements
 
 MONGO_URI = os.getenv("MONGODB_URI")  
 
@@ -37,7 +38,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def upload_avatar(user_id: str = Form(...), file: UploadFile = File(...)):
     """
     Upload avatar and update MongoDB record for the given user_id.
-    Returns the avatar URL or error message.
+    Also increment avatar count and trigger achievement check.
     """
 
     # Validate file format
@@ -51,14 +52,29 @@ async def upload_avatar(user_id: str = Form(...), file: UploadFile = File(...)):
 
     with save_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
     # Construct public URL
     avatar_url = f"http://localhost:8000/static/avatars/{unique_name}"
-    # Update MongoDB
-    result = collection.update_one({"user_id": user_id}, {"$set": {"avatar_url": avatar_url}})
+    
+    result = collection.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {"avatar_url": avatar_url},
+            "$inc": {"avatar_count": 1}
+        }
+    )
+
     if result.matched_count == 0:
         return JSONResponse(status_code=404, content={"error": f"User '{user_id}' not found."})
 
-    return {"user_id": user_id, "avatar_url": avatar_url}
+   
+    check_achievements(user_id)
+
+    return {
+        "user_id": user_id,
+        "avatar_url": avatar_url,
+        "message": "Avatar uploaded & achievement checked"
+    }
 @app.get("/get_avatar/{user_id}")
 def get_avatar(user_id: str):
     """
