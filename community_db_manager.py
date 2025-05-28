@@ -97,3 +97,12 @@ def count_unread_dreams(user_id: str):
         "type": "dream",
         "read": False
     })
+
+plant_profile_col = db["plant_profile"]
+
+def get_plant_owner(plant_id: str):
+    """
+    Get the user_id who owns the given plant_id.
+    """
+    doc = plant_profile_col.find_one({"plant_id": plant_id})
+    return doc["user_id"] if doc else None

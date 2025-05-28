@@ -1,6 +1,6 @@
 # Grow AI – API Documentation
 
-This document outlines all backend API endpoints for the **Achievement** and **Avatar** systems of the Grow AI project.(Just for now.)
+This document outlines all backend API endpoints for the **Achievement**, **Avatar**, and **Notification** systems of the Grow AI project. (Just for now.)
 
 ---
 
@@ -27,7 +27,7 @@ This document outlines all backend API endpoints for the **Achievement** and **A
 **Input:**  
 - URL path `user_id`  
 **Output:**  
-- `unread_dreams` (integer)
+- Integer (e.g., `2`)
 
 ---
 
@@ -96,7 +96,55 @@ This document outlines all backend API endpoints for the **Achievement** and **A
 
 ---
 
+## Notification & Dream Chat Endpoints
+
+### `POST /chat/send_dream_chat`
+**Description:** Send a dream message from one plant to another. Automatically notifies the target plant's user.  
+If no `dream_text` is provided, the system will auto-generate one using poetic logic.  
+
+**Input:** JSON body with:  
+- `from_plant_id` (str)  
+- `to_plant_id` (str)  
+- `dream_text` (str, optional)
+
+**Output:**  
+- `status` (str)  
+- `chat_id` (str)  
+- `used_auto_generated` (bool)  
+  - `true`: system auto-generated the `dream_text` (user left it blank)  
+  - `false`: user/front-end manually submitted the `dream_text`
+
+
+### `GET /chat/get_dream_chats/{plant_id}`
+**Description:** Retrieve dream chats sent to a specific plant.  
+**Input:**  
+- URL path `plant_id`  
+**Output:** List of dream chat objects
+
+### `GET /chat/count_unread_dreams/{user_id}`
+**Description:** Count number of unread "dream" notifications for this user (for red dot display).  
+**Input:**  
+- URL path `user_id`  
+**Output:** Integer
+
+### `GET /chat/get_dream_notifications/{user_id}`
+**Description:** Fetch all unread "dream" notifications.  
+**Input:**  
+- URL path `user_id`  
+**Output:** List of notification objects
+
+### `POST /chat/clear_dream_notifications/{user_id}`
+**Description:** Mark all unread dream notifications as read. Clears red dot.  
+**Input:**  
+- URL path `user_id`  
+**Output:** Number of notifications cleared
+
+---
+
 ## Notes
 - All endpoints assume valid MongoDB records exist for the given `user_id`.
 - Each reward draw costs **100 achievement points**.
 - Animated achievements are defined via `animate: True` in config.
+- Notifications are stored in `notification_log` with type `"dream"`.
+- If no `dream_text` is provided in `/send_dream_chat`, the backend automatically generates one via `generate_dream_text()`.
+  The API response will include `"used_auto_generated": true` to indicate that the content was system-generated.

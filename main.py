@@ -1,11 +1,23 @@
 from fastapi import FastAPI, File, Form, UploadFile
-from avatar_uploader import upload_avatar, get_avatar, count_unread_dreams
+from achievement_api import app as achievement_app
+from avatar_uploader import app as avatar_app
+from avatar_uploader import upload_avatar
+from avatar_uploader import get_avatar
+from community_db_manager import count_unread_dreams
 from check_achievements import check_achievements
-from achievement_api import get_achievements, check_and_draw_lottery
-from achievement_api import get_achievement_progress
-
+from achievement_api import get_achievement_progress, check_and_draw_lottery
+from dream_chat_api import app as chat_app
 
 app = FastAPI()
+
+
+app.mount("/achievement", achievement_app)
+app.mount("/avatar", avatar_app)
+app.mount("/chat", chat_app)
+
+@app.get("/")
+def root():
+    return {"message": "Grow AI backend is running"}
 
 @app.post("/upload_avatar")
 async def upload_avatar_route(
@@ -27,9 +39,6 @@ def trigger_achievement_check(user_id: str):
     check_achievements(user_id)
     return {"status": "checked"}
 
-@app.get("/get_achievements/{user_id}")
-def get_achievements_api(user_id: str):
-    return get_achievements(user_id)
 
 @app.get("/achievement_progress/{user_id}")
 def achievement_progress_api(user_id: str):

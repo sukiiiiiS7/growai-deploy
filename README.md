@@ -2,53 +2,52 @@
 
 ---
 
-## Done
+## Implemented Features
 
-- [x] User avatar upload via `/upload_avatar` (upload image + user_id)
-- [x] Get avatar by ID using `/get_avatar/{user_id}`
-- [x] Red dot system for unread dream notifications via `/count_unread_dreams/{user_id}`
-- [x] MongoDB integration for users, logs, dream chats
-- [x] Light sensor POST/GET endpoint via `/lux` (real-time testable)
-- [x] Backend deployed to Render: [https://growai-backend.onrender.com](https://growai-backend.onrender.com)
-
+- [x] **User Avatar System**
+  - Upload via `POST /upload_avatar` (`user_id` + `image`)
+  - Query avatar via `GET /get_avatar/{user_id}`
+- [x] **Unread Dream Notification**
+  - `GET /count_unread_dreams/{user_id}` for red-dot frontend hint
+- [x] **Achievement System (In Progress)**
+  - Auto-check via `GET /check_achievements/{user_id}`
+  - View unlocked achievements via `GET /get_achievements/{user_id}`
+  - Visual progress bar via `GET /achievement_progress/{user_id}`
+  - Lottery draw via `POST /draw_lottery/{user_id}` (≥100 points)
+- [x] **MongoDB Cloud Integration**
+  - Avatar URLs, user prefs, dream logs, notifications saved to MongoDB Atlas
+- [x] **Sensor Endpoint**
+  - `POST` + `GET /lux` API for logging light sensor data
+- [x] **Render Deployment**
+  - Hosted backend: [https://growai-backend.onrender.com](https://growai-backend.onrender.com)
 
 ---
 
 ## MongoDB Setup
 
-- Hosted on MongoDB Atlas (private)
-- `.env_user` stores the connection string (excluded from Git)
-- See [MongoDB Setup Wiki](https://git.arts.ac.uk/24043715/Grow-AI/wiki/MongoDB-Setup#mongodb-setup-for-grow-ai)
+- MongoDB hosted on **MongoDB Atlas**
+- Local `.env_user` file stores private credentials (excluded via `.gitignore`)
+- Refer to [MongoDB Setup Wiki](https://git.arts.ac.uk/24043715/Grow-AI/wiki/MongoDB-Setup#mongodb-setup-for-grow-ai)
 
 ---
 
-## API Test / Connect Guide
+## Folder Contents
 
-- Use FastAPI endpoints from local or deployed backend
-- Sample dataset (`dream_record_log_labeled.json`) available on request
-- S7 can assist with API simulation or test case setup
-
----
-
-## Folder: `database/`
-
-| File | What it does |
-|------|---------------|
-| `avatar_uploader.py` | Upload avatar, fetch avatar, red-dot logic |
-| `user_db_manager.py` | Manage MongoDB user profiles |
-| `community_db_manager.py` | Handle dream logs, chat logs, notification flags |
-| `dream_db_logger.py` | Upload labeled dream records to MongoDB |
-| `main.py` | FastAPI entry point for deployment |
-| `requirements.txt` | Dependencies for deployment |
-| `.gitignore` | Prevent sensitive files (e.g. `.env_user`) from uploading |
-| `static/avatars/` | Local uploaded avatar images |
+| File | Description |
+|------|-------------|
+| `main.py` | FastAPI entrypoint with all routes registered |
+| `avatar_uploader.py` | Avatar upload, get avatar URL, unread dream counter |
+| `achievement_api.py` | Achievement visual data, progress bar, lottery draw |
+| `check_achievements.py` | Backend logic for auto-unlocking achievements |
+| `achievement_config.py` | Config for all achievements (name, icon, points) |
+| `community_db_manager.py` | Logs plant actions, chats, notifications |
+| `user_db_manager.py` | MongoDB handler for user profile and preferences |
+| `dream_db_logger.py` | (Optional) For writing dream records to cloud DB |
+| `static/avatars/` | Folder for uploaded avatar images |
+| `.env_user` | Private MongoDB URI + user config (excluded from Git) |
+| `requirements.txt` | Dependencies list for deployment |
+| `README.md` | This file |
 
 ---
 
-## FastAPI Example (Local)
 
-Start locally with:
-
-```bash
-cd database
-uvicorn main:app --reload
