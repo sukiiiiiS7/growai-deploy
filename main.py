@@ -7,9 +7,10 @@ from community_db_manager import count_unread_dreams
 from check_achievements import check_achievements
 from achievement_api import get_achievement_progress, check_and_draw_lottery
 from dream_chat_api import app as chat_app
+from plant_log_api import router as plant_log_router
 
 app = FastAPI()
-
+app.include_router(plant_log_router)
 
 app.mount("/achievement", achievement_app)
 app.mount("/avatar", avatar_app)

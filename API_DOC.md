@@ -1,6 +1,6 @@
 # Grow AI – API Documentation
 
-This document outlines all backend API endpoints for the **Achievement**, **Avatar**, and **Notification** systems of the Grow AI project. (Just for now.)
+This document outlines all backend API endpoints for the **Achievement**, **Avatar**, **Notification**, and **Dream Log** systems of the Grow AI project.
 
 ---
 
@@ -96,6 +96,73 @@ This document outlines all backend API endpoints for the **Achievement**, **Avat
 
 ---
 
+## Dream Dialogue Generation
+
+### `POST /generate_dream_dialogue`
+**Description:**  
+Generate a poetic dream dialogue based on structured dream input, using creative templates.  
+Useful for auto-generating `dream_text` when users don’t input one manually.
+
+**Input:**  
+JSON body (`dict`) with at least:  
+- `timestamp` (ISO format string)  
+- `dream_type` (e.g. "sunny", "dry")  
+- `since_water_days` (int)  
+- `likes_bright_light` (bool)  
+- `light_level` (float)  
+- `user_id` (string)
+
+**Output:**  
+- `text`: generated dream dialogue  
+- `mood_tag`: "happy" / "neutral" / "sad" (used for visuals or tone matching)
+
+**Example Response:**
+```json
+{
+  "text": "Sun-kissed and smiling from root to tip.",
+  "mood_tag": "happy"
+}
+```
+
+---
+
+## Dream Log System
+
+### `GET /get_plant_log/{plant_id}`
+**Description:**  
+Fetch all dream logs and environmental states for a given plant. Supports date-grouped output.
+
+**Input:**  
+- `plant_id` (URL path parameter)
+
+**Output:**
+- `plant_id`
+- `log_by_date`: Dictionary grouped by `YYYY-MM-DD`, each value is a list of logs
+  - Each log includes:
+    - `timestamp`
+    - `dream_type`
+    - `dream_dialogue`
+    - `mood_tag`
+    - `light_level`
+    - `avgMoisture`
+    - `health_score`
+    - `water_days`
+
+---
+### `GET /get_latest_status/{plant_id}`
+
+**Description:**  
+Returns the latest sensor data for a specific plant. Values are rounded for frontend display.
+
+**Input:**  
+- `plant_id`: The target plant's ID (e.g., `plant_01`)
+
+**Output:**  
+- `plant_id`
+- `light_level`: Integer, rounded from lux
+- `avgMoisture`: Integer, percentage (converted from 0–1 float)
+- `timestamp`: Timestamp of the latest entry
+---
 ## Notification & Dream Chat Endpoints
 
 ### `POST /chat/send_dream_chat`
@@ -113,7 +180,6 @@ If no `dream_text` is provided, the system will auto-generate one using poetic l
 - `used_auto_generated` (bool)  
   - `true`: system auto-generated the `dream_text` (user left it blank)  
   - `false`: user/front-end manually submitted the `dream_text`
-
 
 ### `GET /chat/get_dream_chats/{plant_id}`
 **Description:** Retrieve dream chats sent to a specific plant.  
@@ -139,12 +205,13 @@ If no `dream_text` is provided, the system will auto-generate one using poetic l
 - URL path `user_id`  
 **Output:** Number of notifications cleared
 
+
 ---
 
 ## Notes
 - All endpoints assume valid MongoDB records exist for the given `user_id`.
 - Each reward draw costs **100 achievement points**.
 - Animated achievements are defined via `animate: True` in config.
-- Notifications are stored in `notification_log` with type `"dream"`.
+- Notifications are stored in `notification_log` with type "dream".
 - If no `dream_text` is provided in `/send_dream_chat`, the backend automatically generates one via `generate_dream_text()`.
   The API response will include `"used_auto_generated": true` to indicate that the content was system-generated.

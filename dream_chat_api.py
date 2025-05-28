@@ -2,22 +2,10 @@ from fastapi import FastAPI, Body
 from community_db_manager import add_dream_chat, chat_col, add_notification, get_plant_owner
 from community_db_manager import count_unread_dreams, get_notifications, mark_notifications_read
 import random
+from dialogue_utils import make_dialogue
+from datetime import datetime
 
 app = FastAPI()
-
-def generate_dream_text():
-    return random.choice([
-        "In the silence between watering, I dreamed of rain that never ends.",
-        "I saw roots entwined like forgotten stories beneath the earth.",
-        "The stars whispered names I no longer remember, yet still grow toward.",
-        "In my sleep, I turned light into longing.",
-        "A bee visited me in a dream, humming truths I cannot speak.",
-        "I dreamed I was a forest, not a single stem.",
-        "I heard the footsteps of time in the falling of old petals.",
-        "The wind carried a lullaby from a tree I’ve never met.",
-        "In the dark, I bloomed with questions.",
-        "I touched the shadow of the sun and it felt like home."
-    ])
 
 @app.post("/send_dream_chat")
 def send_dream_chat(
@@ -27,10 +15,22 @@ def send_dream_chat(
 ):
     used_auto_generated = False
 
+
     if not dream_text or dream_text.strip() == "":
-        dream_text = generate_dream_text()
-        used_auto_generated = True
-    chat_id = add_dream_chat(from_plant_id, to_plant_id, dream_text)
+        dream_input = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "dream_type": "sunny",  # TODO: replace with actual predicted dream_type
+            "since_water_days": 2,
+            "likes_bright_light": True,
+            "light_level": 60,
+            "user_id": from_plant_id
+        }
+    generated = make_dialogue(dream_input)
+    dream_text = generated["text"]
+    mood_tag = generated["mood_tag"]
+    used_auto_generated = True
+
+    chat_id = add_dream_chat(from_plant_id, to_plant_id, dream_text, mood_tag)
     #Notify the owners of the plants.
     to_user_id = get_plant_owner(to_plant_id)
     if to_user_id:
@@ -41,11 +41,23 @@ def send_dream_chat(
         )
 
     return {
-        "status": "success",
-        "chat_id": str(chat_id),
-        "used_auto_generated": used_auto_generated # True = system generated the dream_text (user did NOT provide it)
-                                                # False = user/front-end provided the dream_text manually
-    }
+    "status": "success",
+    "chat_id": str(chat_id),
+    "used_auto_generated": used_auto_generated,
+    "mood_tag": mood_tag  
+}
+                                          
+@app.post("/generate_dream_dialogue")
+def generate_dream_dialogue(row: dict = Body(...)):
+    """
+    Generate a dream dialogue string and mood_tag from dream input.
+    Required fields: timestamp, dream_type, since_water_days, likes_bright_light, light_level, user_id
+    """
+    try:
+        result = make_dialogue(row)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/get_dream_chats/{plant_id}")
 def get_dream_chats(plant_id: str):

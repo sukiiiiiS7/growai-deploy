@@ -45,16 +45,18 @@ def add_plant_log(user_id: str, plant_id: str, action: str, note: str = ""):
 
 # Dream messages between neighbor plants 
 
-def add_dream_chat(from_plant_id: str, to_plant_id: str, dream_text: str):
+def add_dream_chat(from_plant_id: str, to_plant_id: str, dream_text: str, mood_tag: str = None):
     """
     Save a dream message from one plant to another.
     """
     chat = {
-        "from_plant_id": from_plant_id,
-        "to_plant_id": to_plant_id,
-        "dream_text": dream_text,
-        "timestamp": datetime.now().isoformat()
-    }
+    "from_plant_id": from_plant_id,
+    "to_plant_id": to_plant_id,
+    "dream_text": dream_text,
+    "mood_tag": mood_tag,
+    "timestamp": datetime.now().isoformat()
+}
+
     return chat_col.insert_one(chat).inserted_id
 
 # User notifications 

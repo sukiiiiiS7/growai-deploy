@@ -1,33 +1,35 @@
 # Grow AI – Backend Setup (`database/` Folder)
 
+This folder contains the full backend implementation for avatar management, achievement unlocking, dream generation, and plant-based messaging in the Grow AI system.
+
 ---
 
 ## Implemented Features
 
-- [x] **User Avatar System**
-  - Upload via `POST /upload_avatar` (`user_id` + `image`)
-  - Query avatar via `GET /get_avatar/{user_id}`
-- [x] **Unread Dream Notification**
-  - `GET /count_unread_dreams/{user_id}` for red-dot frontend hint
-- [x] **Achievement System (In Progress)**
-  - Auto-check via `GET /check_achievements/{user_id}`
-  - View unlocked achievements via `GET /get_achievements/{user_id}`
-  - Visual progress bar via `GET /achievement_progress/{user_id}`
-  - Lottery draw via `POST /draw_lottery/{user_id}` (≥100 points)
-- [x] **MongoDB Cloud Integration**
-  - Avatar URLs, user prefs, dream logs, notifications saved to MongoDB Atlas
-- [x] **Sensor Endpoint**
-  - `POST` + `GET /lux` API for logging light sensor data
-- [x] **Render Deployment**
-  - Hosted backend: [https://growai-backend.onrender.com](https://growai-backend.onrender.com)
+- **User Avatar System**
+  - Upload avatars and retrieve user profile images
+  - Tracks unread dream notifications for users
 
----
+- **Achievement System**
+  - Unlock milestones based on user behavior
+  - Visual progress bar & lottery reward draw (≥100 points)
+  - Animated achievements supported
 
-## MongoDB Setup
+- **Dream Dialogue & Messaging**
+  - Plants generate poetic dream logs based on mood, light, and water
+  - Dream chat between neighboring plants
+  - In-app notification system for dream messages
+  
+- **Sensor Status Summary**
+  - `/get_latest_status/{plant_id}` Return the latest light and humidity data of the plant (for display on the home page).
 
-- MongoDB hosted on **MongoDB Atlas**
-- Local `.env_user` file stores private credentials (excluded via `.gitignore`)
-- Refer to [MongoDB Setup Wiki](https://git.arts.ac.uk/24043715/Grow-AI/wiki/MongoDB-Setup#mongodb-setup-for-grow-ai)
+- **MongoDB Cloud Integration**
+  - Stores all logs, profiles, avatars, messages on MongoDB Atlas
+  - Built-in support for light sensor readings
+
+- **Deployed via Render**
+  - Backend hosted at: [https://growai-backend.onrender.com](https://growai-backend.onrender.com)
+
 
 ---
 
@@ -35,19 +37,38 @@
 
 | File | Description |
 |------|-------------|
-| `main.py` | FastAPI entrypoint with all routes registered |
-| `avatar_uploader.py` | Avatar upload, get avatar URL, unread dream counter |
-| `achievement_api.py` | Achievement visual data, progress bar, lottery draw |
-| `check_achievements.py` | Backend logic for auto-unlocking achievements |
-| `achievement_config.py` | Config for all achievements (name, icon, points) |
-| `community_db_manager.py` | Logs plant actions, chats, notifications |
-| `user_db_manager.py` | MongoDB handler for user profile and preferences |
-| `dream_db_logger.py` | (Optional) For writing dream records to cloud DB |
-| `static/avatars/` | Folder for uploaded avatar images |
-| `.env_user` | Private MongoDB URI + user config (excluded from Git) |
-| `requirements.txt` | Dependencies list for deployment |
+| `main.py` | FastAPI root entrypoint – combines all API routes |
+| `avatar_uploader.py` | Handles image upload and unread counter |
+| `achievement_api.py` | API routes for achievements & lottery |
+| `check_achievements.py` | Core logic for automatic achievement detection |
+| `achievement_config.py` | Achievement metadata (ID, icon, name, animation, points) |
+| `dream_chat_api.py` | Routes for plant-to-plant dream chatting |
+| `community_db_manager.py` | Logs dream chats and user notifications |
+| `user_db_manager.py` | Manages user profiles and preferences |
+| `dream_db_logger.py` | [Optional] Logs generated dream data to MongoDB |
+| `dialogue_utils.py` | Dream generation logic (mood detection + templates) |
+| `dialogue_templates.json` | Poetic dream sentence templates |
+| `static/avatars/` | Stores uploaded images |
+| `.env_user` | MongoDB secrets (excluded from Git) |
+| `requirements.txt` | Python dependencies |
 | `README.md` | This file |
 
 ---
 
+## Notes
 
+- `/chat/send_dream_chat` auto-triggers dream notifications
+- Lottery draws cost **100 points**, managed internally
+- `generate_dream_dialogue` supports mood-tagging for dream aesthetics
+- FastAPI routes follow REST principles for modular frontend integration
+
+---
+
+## Acknowledgements
+
+- All backend structure, achievement logic, database routing, and API design by **S7**
+- Dream dialogue generation and template logic (`dialogue_utils.py`, `dialogue_templates.json`) contributed by **Le**
+
+---
+
+If you need help extending or deploying, see the [MongoDB Setup Wiki](https://git.arts.ac.uk/24043715/Grow-AI/wiki/MongoDB-Setup#mongodb-setup-for-grow-ai).
