@@ -18,9 +18,6 @@ app.mount("/achievement", achievement_app)
 app.mount("/avatar", avatar_app)
 app.mount("/chat", chat_app)
 
-@app.get("/")
-def root():
-    return {"message": "Grow AI backend is running"}
 
 @app.post("/upload_avatar")
 async def upload_avatar_route(
