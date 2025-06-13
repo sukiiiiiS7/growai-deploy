@@ -4,5 +4,6 @@ pymongo
 python-dotenv
 python-multipart
 pandas
-Pillow
+Pillow==9.5.0
+
 
