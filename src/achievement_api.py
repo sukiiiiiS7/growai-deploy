@@ -5,9 +5,9 @@ from pathlib import Path
 from datetime import datetime
 import os
 import random
-from achievement_config import ACHIEVEMENTS
 from fastapi.responses import JSONResponse
-from check_achievements import check_achievements
+from database.achievement_config import ACHIEVEMENTS
+from database.check_achievements import check_achievements
 
 app = FastAPI()
 LOTTERY_COST = 100

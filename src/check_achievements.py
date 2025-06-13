@@ -7,7 +7,7 @@
 
 from datetime import datetime, time
 from pymongo import MongoClient
-from achievement_config import ACHIEVEMENTS
+from database.achievement_config import ACHIEVEMENTS
 from pathlib import Path
 from dotenv import load_dotenv
 import os

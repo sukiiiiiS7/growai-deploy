@@ -17,8 +17,8 @@ import shutil
 import uuid
 import os
 from pymongo import MongoClient
-from community_db_manager import count_unread_dreams
-from check_achievements import check_achievements
+from database.community_db_manager import count_unread_dreams
+from database.check_achievements import check_achievements
 
 MONGO_URI = os.getenv("MONGODB_URI")  
 

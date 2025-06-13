@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Body
-from community_db_manager import add_dream_chat, chat_col, add_notification, get_plant_owner
-from community_db_manager import count_unread_dreams, get_notifications, mark_notifications_read
+from database.community_db_manager import add_dream_chat, chat_col, add_notification, get_plant_owner
+from database.community_db_manager import count_unread_dreams, get_notifications, mark_notifications_read
 import random
-from dialogue_utils import make_dialogue
+from database.dialogue_utils import make_dialogue
 from datetime import datetime
 
 app = FastAPI()

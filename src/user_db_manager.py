@@ -58,6 +58,11 @@ if __name__ == "__main__":
     sample_user = {
         "user_id": "S7test",
         "name": "Siqi",
+        "location": {
+            "lat": 51.5074,
+            "lon": -0.1278
+        },
+
         "avatar_url": "https://example.com/avatar_s7.png",
         "neighbors": ["plant_001", "plant_002"],
         "plant_preference": {
@@ -94,3 +99,11 @@ if __name__ == "__main__":
     print("All current users in the database:")
     for user in list_users():
         print(user)
+    update_count = update_user("S7test", {
+    "location": {
+        "lat": 51.5074,
+        "lon": -0.1278
+    }
+})
+
+    print(f"[UPDATE] Set location for 'S7test' → modified count: {update_count}")

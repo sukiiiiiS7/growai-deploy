@@ -20,9 +20,10 @@ Training data sources include:
 
 ## Architecture Diagram
 
-The diagram below shows how the leaf recognition system combines training, classification, and health scoring:
+The updated architecture integrates visual classification, health scoring, and smart watering recommendation using real-time weather forecast:
 
 ![Leaf Classifier Architecture](leaf_classifier_architecture.png)
+
 
 ---
 
@@ -127,7 +128,7 @@ This will provide:
 
 ## Health Scoring Subsystem (`leaf/scoring/`)
 
-This subsystem combines image feature deductions with environmental factors to produce a health_score.
+This subsystem combines image feature deductions with environmental factors to produce a health_score.These scores are used in the /leaf/scan API to return personalized health insights and watering recommendations, and further exposed via /leaf/next_watering/{user_id} for front-end displa
 
 ### Key Components
 
@@ -194,6 +195,11 @@ The final health score combines image and environment components and outputs a s
 
 ```
 
+---
+### Weather-Aware Watering Recommendation
+
+We use the Open-Meteo API to check for near-future rainfall based on the user's geolocation.
+This ensures watering is skipped when rain is expected — useful even for semi-outdoor environments like balconies or window sills.
 ---
 Dataset not included in this repository due to size and licensing.  
 Please follow instructions in `leaf/README.md` to rebuild the dataset locally.

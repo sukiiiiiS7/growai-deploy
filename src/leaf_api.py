@@ -1,21 +1,24 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Path
 from fastapi.responses import JSONResponse
 from typing import Dict
 from io import BytesIO
 from PIL import Image
 import torch
 import torchvision.transforms as transforms
+from torchvision.models import resnet18
 import sys
 import os
 import numpy as np
+from datetime import datetime, timedelta
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
-sys.path.append(PROJECT_ROOT)
 
 # Import score computation and environment bonus logic
 from leaf.scoring.health_score import calculate_health_score
 from leaf.scoring.env_bonus import calculate_environment_bonus
+from leaf.predictor.watering_model import predict_watering_days
+from database.user_db_manager import get_user
+from leaf.weather_module import should_delay_watering
+
 
 MODEL_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "leaf", "leaf_classifier_final_augmented.pth")
@@ -26,7 +29,9 @@ router = APIRouter(prefix="/leaf", tags=["Leaf Scan"])
 from torchvision import models
 
 # Initialize ResNet18 model (no pretrained weights)
-model = models.resnet18(pretrained=False)
+model = resnet18(weights=None)
+model.fc = torch.nn.Linear(model.fc.in_features, 2)
+
 
 # Adjust the final layer for 2-class classification
 model.fc = torch.nn.Linear(model.fc.in_features, 2)
@@ -86,30 +91,32 @@ def extract_leaf_features(img: Image.Image) -> dict:
 @router.post("/scan", summary="Scan Leaf Health", description="Upload a leaf image and optional environment data to analyze plant health.")
 async def scan_leaf(
     image: UploadFile = File(..., description="Leaf image (.jpg/.png)"),
-    light_level: float = Form(50.0, description="Light level (0-100, optional)"),
-    soil_moisture: float = Form(50.0, description="Soil moisture (0-100, optional)")
+    light_level: float = Form(50.0, description="Light level (0–100, optional)"),
+    soil_moisture: float = Form(50.0, description="Soil moisture (0–100, optional)"),
+    user_id: str = Form(..., description="User ID to fetch watering preference and location")
 ):
+
+    
     """
-    Main API endpoint: analyzes the uploaded leaf image and optional environment data,
-    and returns a comprehensive health report.
+Main API endpoint: Analyzes the uploaded leaf image and optional environment data,
+then returns a comprehensive health report including visual and environmental insights.
 
-    Parameters:
-    - image: Leaf image file
-    - light_level: Ambient light value (default 50)
-    - soil_moisture: Soil moisture level (default 50)
+Parameters:
+- image (UploadFile): Leaf image file (.jpg/.png)
+- light_level (float): Ambient light level (0–100), default = 50
+- soil_moisture (float): Soil moisture level (0–100), default = 50
 
-    Returns:
-    - health_score: Final health score (0–100)
-    - label: Predicted category by the model (Healthy / Mild Wilt / Health Warning)
-    - components: Sub-scores like image_score and env_bonus
-    - explanation: Comments on environmental factors
-    - recommendations: Care suggestions for the plant
+Returns (JSON):
+- health_score (int): Overall plant health score (0–100)
+- label (str): Leaf condition classified as "healthy" or "wilted"
+- explanation (str): Summary of environmental analysis (e.g., "Light is sufficient.")
+- recommendations (str): Care suggestions based on image + environment analysis,
+  including watering interval prediction (e.g., "Water every 3 days.")
+- components (dict):
+    - image_score (int): Score from visual features (e.g., yellowing, damage)
+    - env_bonus (int): Environmental adjustment (range: –10 to +10)
+"""
 
-    - explanation: Comments on environmental factors (e.g., "Light level is optimal.")
-    - recommendations: Adaptive suggestions based on detected issues (e.g., "Watering is recommended.")
-    - components.image_score: Derived from visual cues (color, shape, black spots)
-    - components.env_bonus: Scored from light & soil inputs (range: -10 to +10)
-    """
     try:
         # 1. Read and open image
         contents = await image.read()
@@ -134,8 +141,130 @@ async def scan_leaf(
             soil_moisture=soil_moisture,
             light_level=light_level
         )
+        # 5. Predict watering interval using the trained model
+        watering_days = predict_watering_days(light_level, soil_moisture)
+        # Adjust watering_days based on plant-level needs
+        def adjust_by_plant_needs(user_id: str, watering_days: int) -> tuple[int, str]:
+            user = get_user(user_id)
+            plants = user.get("plants", []) if user else []
+
+            # Count how many plants prefer frequent watering
+            frequent = sum(p.get("needs_frequent_water", False) for p in plants)
+            total = len(plants)
+            style_note = ""
+
+            if total == 0:
+                return watering_days, style_note  # No plants, no adjustment
+
+            ratio = frequent / total
+            if ratio >= 0.6:
+                watering_days = max(1, watering_days - 1)
+                style_note = "Most of your plants prefer frequent watering, so the interval was shortened."
+            elif ratio <= 0.4:
+                watering_days += 1
+                style_note = "Most of your plants prefer sparse watering, so the interval was extended."
+
+            return watering_days, style_note
+
+
+        watering_days, style_note = adjust_by_plant_needs(user_id, watering_days)
+        result["watering_days"] = watering_days
+        result["suggestion"] = f"Suggested watering interval: every {watering_days} day(s)"
+        # 5.5 Optional: Delay watering due to upcoming rain
+        from leaf.weather_module import should_delay_watering
+
+        user = get_user(user_id)
+        weather_note = ""
+        if user and "location" in user:
+            coords = user["location"]
+            lat = coords.get("lat")
+            lon = coords.get("lon")
+            if lat is not None and lon is not None:
+                delay_due_to_weather = should_delay_watering(lat, lon)
+                if delay_due_to_weather:
+                    watering_days += 1
+                    weather_note = "Rain is expected soon. Watering has been delayed by one day."
+
+
+        # 6. Merge image-based recommendations with watering prediction
+        image_recommendation = " ".join(result["recommendations"]).rstrip(".")
+        final_notes = ". ".join(filter(None, [style_note, weather_note]))
+
+        merged_reco = (
+            f"{image_recommendation}. {final_notes} "
+            f"Considering current environmental conditions (light: {light_level}, moisture: {soil_moisture}), "
+            f"we recommend watering approximately every {watering_days} day(s)."
+        )
+
+
+
+
+        # 7. Replace old recommendation + remove separate field
+        result["recommendations"] = merged_reco
+        result.pop("suggestion", None)
+        result.pop("watering_days", None)
+        result["label"] = label
 
         return result
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.get("/next_watering/{user_id}", summary="Predict Next Watering Date")
+async def get_next_watering(user_id: str):
+    """
+    Returns the estimated next watering date for a user, considering environment and plant preference.
+    """
+
+    try:
+        user = get_user(user_id)
+        if not user:
+            return JSONResponse(status_code=404, content={"error": "User not found."})
+
+
+        light_level = 50.0
+        soil_moisture = 50.0
+
+
+        watering_days = predict_watering_days(light_level, soil_moisture)
+
+        def adjust_by_plant_needs(user_id: str, watering_days: int) -> tuple[int, str]:
+            user = get_user(user_id)
+            plants = user.get("plants", []) if user else []
+            frequent = sum(p.get("needs_frequent_water", False) for p in plants)
+            total = len(plants)
+            style_note = ""
+
+            if total == 0:
+                return watering_days, style_note
+
+            ratio = frequent / total
+            if ratio >= 0.6:
+                watering_days = max(1, watering_days - 1)
+            elif ratio <= 0.4:
+                watering_days += 1
+
+            return watering_days, style_note
+
+        watering_days, _ = adjust_by_plant_needs(user_id, watering_days)
+
+        from leaf.weather_module import should_delay_watering
+        if "location" in user:
+            coords = user["location"]
+            lat = coords.get("lat")
+            lon = coords.get("lon")
+            if lat is not None and lon is not None:
+                delay_due_to_weather = should_delay_watering(lat, lon)
+                if delay_due_to_weather:
+                    watering_days += 1
+
+        next_date = datetime.today() + timedelta(days=watering_days)
+
+        return {
+            "user_id": user_id,
+            "predicted_next_watering_date": next_date.strftime("%Y-%m-%d"),
+            "days_until_next_watering": watering_days
+        }
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
