@@ -215,3 +215,26 @@ If no `dream_text` is provided, the system will auto-generate one using poetic l
 - Notifications are stored in `notification_log` with type "dream".
 - If no `dream_text` is provided in `/send_dream_chat`, the backend automatically generates one via `generate_dream_text()`.
   The API response will include `"used_auto_generated": true` to indicate that the content was system-generated.
+
+
+### `POST /leaf/scan`
+
+Uploads a leaf image and optional environment data (light, moisture) to analyze plant health.
+
+**Parameters (multipart/form-data):**
+- `image` (file, required): Leaf image (.jpg/.png)
+- `light_level` (float, optional): Light intensity, default = 50
+- `soil_moisture` (float, optional): Soil moisture percentage, default = 50
+
+**Returns:**
+```json
+{
+  "health_score": 82,
+  "label": "Mild Wilt",
+  "components": {
+    "image_score": 70,
+    "env_bonus": 12
+  },
+  "explanation": ["Light level is optimal.", "Soil moisture is ideal."],
+  "recommendations": ["Increase watering slightly."]
+}
