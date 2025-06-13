@@ -54,3 +54,7 @@ def draw_lottery_api(user_id: str):
 @app.get("/")
 def root():
     return {"message": "Grow AI backend is running + achievement route included"}
+
+print("leaf_router imported and registered.")
+print(leaf_router.routes)
+
