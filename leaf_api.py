@@ -17,9 +17,8 @@ sys.path.append(PROJECT_ROOT)
 from leaf.scoring.health_score import calculate_health_score
 from leaf.scoring.env_bonus import calculate_environment_bonus
 
-MODEL_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "leaf", "leaf_classifier_final_augmented.pth")
-)
+MODEL_PATH = os.path.join(os.getcwd(), "leaf", "leaf_classifier_final_augmented.pth")
+
 # Initialize FastAPI router
 router = APIRouter(prefix="/leaf", tags=["Leaf Scan"])
 
