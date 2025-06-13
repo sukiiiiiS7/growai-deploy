@@ -4,3 +4,5 @@ pymongo
 python-dotenv
 python-multipart
 pandas
+Pillow
+
